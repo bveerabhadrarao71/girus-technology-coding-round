@@ -1,0 +1,116 @@
+import java.util.*;
+
+public class MinInte {
+    //use  Map to store variable names and their integer values
+    private final Map<String, Integer> vary = new HashMap<>();
+
+    //process for a  list of statements in a starting point.
+    public void start(List<String> waves) {
+        for (String wave : waves) {
+            wave = wave.trim();                         // exchange the scalling spaces
+            if (wave.startsWith("let ")) {              //  declare the variables
+                executeLetcond(wave);//if condition starts 
+            } else if (wave.startsWith("if ")) {        // condition of else-if
+                executeIf(wave);
+            }
+            //avoid underrated statements
+        }
+        // executin starts then the print variables...
+        printVar();
+    }
+
+    // Handle 'let' statements: let x = expression;
+    private void executeLetcond(String srk) {
+        // Remove 'let ' and trailing ';'
+        String str = srk.substring(4, srk.length() - 1).trim();
+        // Split at first '=' into var name and expression
+        String[] stats = str.split("=", 2);
+        String name = stats[0].trim();               // variable name
+        String expression = stats[1].trim();               // expression text
+        int val = valexpression(expression);                  // compute its value
+        vary.put(name, val);                       // store in map
+    }//By using encapsulation then uses the  private instead of public because of sensitive data is hidden from the user
+    private void executeIf(String srk) {
+        // condition between the quotes
+        int condStart = srk.indexOf('(');
+        int condEnd = srk.indexOf(')');
+        String condition = srk.substring(condStart + 1, condEnd).trim();
+        // find the statements of open and closed braces.
+        int openBrace = srk.indexOf('{');
+        int closedBrace = srk.indexOf('}');
+        String in = srk.substring(openBrace + 1, closedBrace).trim();
+        // Evaluate condition
+        if (evaluate(condition)) {
+            executeLetcond(in);                        // run the let if true
+        }
+    }
+
+    // Evaluate a boolean condition like "a < 5" or "x == y"
+    private boolean evaluate(String condition) {
+        // operations like "==","!=",...etc....
+        String[] ops = {"==", "!=", "<=", ">=", "<", ">"};
+        for (String op : ops) {
+            int idx = condition.indexOf(op);
+            if (idx != -1) {
+                String left = condition.substring(0, idx).trim();
+                String right = condition.substring(idx + op.length()).trim();
+                int lv = valexpression(left);
+                int rv = valexpression(right);
+                switch (op) {
+                    case "==": return lv == rv;
+                    case "!=": return lv != rv;
+                    case "<":  return lv < rv;
+                    case ">":  return lv > rv;
+                    case "<=": return lv <= rv;
+                    case ">=": return lv >= rv;
+                }
+            }
+        }
+        return false;  // no operator found
+    }
+
+    // Evaluate an arithmetic expression: supports + and - of two terms
+    private int valexpression(String expression) {
+        // Handle addition or subtraction
+        if (expression.contains("+")) {
+            String[] stats = expression.split("\\+", 2);
+            return valexpression(stats[0].trim()) + valexpression(stats[1].trim());
+        }
+        if (expression.contains("-")) {
+            String[] stats = expression.split("-", 2);
+            return valexpression(stats[0].trim()) - valexpression(stats[1].trim());
+        }
+        // It may be a literal integer or a variable
+        if (expression.matches("\\d+")) {
+            return Integer.parseInt(expression);
+        } else {
+            // looking for an variable, when the default is  0 then it will be printed is not found
+            return vary.getOrDefault(expression, 0);
+        }
+    }
+
+    // All the values and variables can be printed.
+    private void printVar() {
+        System.out.println("Variables state:");
+        for (Map.Entry<String, Integer> e : vary.entrySet()) {
+            System.out.println(e.getKey() + " = " + e.getValue());
+        }
+    }
+
+    // working of testcases
+    public static void main(String[] args) {
+        MinInte interp = new MinInte();
+
+        List<String> pro = Arrays.asList(
+            "let a = 7;",
+            "let b = 12;",
+            "if (a < b) { let c = a + b; }",
+            "if (b < a) { let d = 1; }",
+            "let e = c - 5;"
+        );
+
+        interp.start(pro);
+        // Expected output value and Variables state is :-
+        // a = 7,// b = 12,// c = 19,// e = 14
+    }
+}

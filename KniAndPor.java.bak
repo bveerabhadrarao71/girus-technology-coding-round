@@ -1,0 +1,134 @@
+import java.util.*;
+
+public class KniAndPor {
+
+    // Directions for moving: right, down, left, up
+    private static final int[][] DIRECT = {
+        {0, 1},  // moving from right
+        {1, 0},  // moving from down
+        {0, -1}, // moving from  left
+        {-1, 0}  // moving from up
+    };
+
+    // Check if a cell (x, y) is inside the grid and not a wall, and not yet visited
+    private static boolean validate(int k, int l, int[][] grid, boolean[][] visited) {
+        int rows = grid.length;
+        int cols = grid[0].length;
+        return k >= 0 && k < rows
+            && l >= 0 && l < cols
+            && grid[k][l] == 0
+            && !visited[k][l];
+    }
+
+    // Run a BFS from start to end without using teleport
+    // Returns number of steps, or -1 if end is unreachable
+    private static int ktr(int[][] grid, int[] start, int[] end) {
+        int rows = grid.length;
+        int cols = grid[0].length;
+
+        boolean[][] visited = new boolean[rows][cols];
+        Queue<int[]> queue = new LinkedList<>();
+
+        // Put start cell into queue with distance 0
+        queue.offer(new int[]{start[0], start[1], 0});
+        visited[start[0]][start[1]] = true;
+
+        // standard loop starts in this condition...
+        while (!queue.isEmpty()) {
+            int[] lin = queue.poll();
+            int r = lin[0];
+            int p = lin[1];
+            int dist = lin[2];
+
+            // If we reached end, return the distance
+            if (r == end[0] && p == end[1]) {
+                return dist;
+            }
+
+            // check for the all 4 conditions...
+            for (int[] d : DIRECT) {
+                int x1 = r + d[0];
+                int y1 = p + d[1];
+
+                if (validate(x1, y1, grid, visited)) {
+                    visited[x1][y1] = true;
+                    queue.offer(new int[]{x1, y1, dist + 1});
+                }
+            }
+        }
+
+        // End was never reached
+        return -1;
+    }
+
+    // it can allow to check for shortest path
+    public static int shortedPath(int[][] grid) {//shortestPathWithTeleport
+        int rows = grid.length;
+        int cols = grid[0].length;
+
+        // empty cells will be collected 
+        List<int[]> emptyCells = new ArrayList<>();
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (grid[i][j] == 0) {
+                    emptyCells.add(new int[]{i, j});
+                }
+            }
+        }
+
+        // Step 1: Try a normal BFS without teleport
+        int minSteps = ktr(grid, new int[]{0, 0}, new int[]{rows - 1, cols - 1});
+
+        // Step 2: Try using one teleport between any two empty cells
+        for (int[] from : emptyCells) {
+            for (int[] to : emptyCells) {
+                // Skip if it's the same cell
+                if (from[0] == to[0] && from[1] == to[1]) {
+                    continue;
+                }
+
+                // Steps to reach 'from' cell without teleport
+                int stepsToFrom = ktr(grid, new int[]{0, 0}, from);
+                // Steps to go from 'to' cell to end without teleport
+                int stepsFromToEnd = ktr(grid, to, new int[]{rows - 1, cols - 1});
+
+                // If both parts are reachable, update minimum steps
+                if (stepsToFrom != -1 && stepsFromToEnd != -1) {
+                    int total = stepsToFrom + 1 + stepsFromToEnd; // +1 for the teleport jump
+                    if (minSteps == -1 || total < minSteps) {
+                        minSteps = total;
+                    }
+                }
+            }
+        }
+
+        return minSteps;
+    }
+
+    // it can be tested with the diffirent cases 
+    public static void main(String[] args) {
+        // Test Case 1:start and end are similar cell
+        int[][] g1 = {
+            {1}
+        };
+        int r1 = shortedPath(g1);
+        System.out.println(" CHECK FOR TEST CASE 1 - Shortest path: " + r1);  // Expected: 0
+
+        // Test Case 2: Must port  from point  start to end
+        int[][] g2 = {
+            {1, 0, 1},
+            {1, 1, 0},
+            {0, 1, 1}
+        };
+        int r2 = shortedPath(g2);
+        System.out.println(" CHECK FOR TEST CASE 2 - Shortest path : " + r2);  // Expected: 1
+
+        // Test Case 3: End is notreachable
+        int[][] g3 = {
+            {1, 0},
+            {0, 1}
+        };
+        int r3 = shortedPath(g3);
+        System.out.println("CHECK FOR TEST CASE 3 - notreachable: " + r3);  // Expected: -1
+    }
+}

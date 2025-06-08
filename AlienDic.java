@@ -1,0 +1,111 @@
+import java.util.*;
+
+public class AlienDic{
+
+    // the order of characters from the alien language letters
+    public static String aliOrd(String[] letters) {
+        // Create a map to a set of characters that come after
+        Map<Character, Set<Character>> graph = new HashMap<>();
+        // Map to store how many characters point to each character count
+        Map<Character, Integer> inDeg = new HashMap<>();
+
+        // Loop through each word
+        for (String letter : letters) {
+            // Loop through each character in the word
+            for (char c : letter.toCharArray()) {
+                // Add character to graph if not present
+                graph.putIfAbsent(c, new HashSet<>());
+                // Initialize in-degree of character to 0 if not already set
+                inDeg.putIfAbsent(c, 0);
+            }
+        }
+
+        // Compare adjacent words to find ordering rules
+        for (int i = 0; i < letters.length - 1; i++) {
+            // Take two consecutive words
+            String w1 = letters[i];
+            String w2 = letters[i + 1];
+            // Find the minimum length of these two words
+            int length = Math.min(w1.length(), w2.length());
+
+            // Flag to check if a difference was found  in characters
+            boolean diffFound = false;
+
+            // Compare characters of the two words one by one
+            for (int j = 0; j < length; j++) {
+                char ch1 = w1.charAt(j);
+                char ch2 = w2.charAt(j);
+                if (ch1 != ch2) {
+                    // If char2 is not  a neighbor of char1 in the graph
+                    if (!graph.get(ch1).contains(ch2)) {
+                        // Adding a char2 as a neighbor of char1
+                        graph.get(ch1).add(ch2);
+                        // Increase the inDeg of char2 by increment 1
+                        inDeg.put(ch2, inDeg.get(ch2) + 1);
+                    }
+                    // Mark that difference is found and break loop
+                    diffFound = true;
+                    break;
+                }
+            }
+
+            // If no difference  was found and w1 is longer than w2, order is invalid
+            if (!diffFound && w1.length() > w2.length()) {
+                return " "; // Return empty string 
+            }
+        }
+
+        // Queue to hold characters with zero in-degree and in this there was no ordering
+        Queue<Character> queue = new LinkedList<>();
+        // Add all characters with zero in-degree to the queue
+        for (char c : inDeg.keySet()) {
+            if (inDeg.get(c) == 0) {
+                queue.offer(c);
+            }
+        }
+
+        // StringBuilder to build the final character order
+        StringBuilder ord = new StringBuilder();
+
+        // Process the queue until empty
+        while (!queue.isEmpty()) {
+            // Take character from front of the queue
+            char instant = queue.poll();
+            // Add it to the final order string
+            ord.append(instant);
+
+            // For every character that comes after instant character
+            for (char next : graph.get(instant)) {
+                // Reduce the in-degree of that next character by 1
+                inDeg.put(next, inDeg.get(next) - 1);
+                // If in-degree becomes zero, add it to the queue
+                if (inDeg.get(next) == 0) {
+                    queue.offer(next);
+                }
+            }
+        }
+
+        // If final order length is less than total unique chars, it means a cycle exists
+        if (ord.length() < inDeg.size()) {
+            return ""; // Return empty string for invalid order due to cycle
+        }
+
+        // Return the calculated order of characters
+        return ord.toString();
+    }
+
+    // Main function to test the aliOrd function with some testing  sample inputs for the given programs.
+    public static void main(String[] args) {
+        // Test case 1: example from problem description
+        String[] w1 = {"xyz", "xyr", "nmk", "ott", "ortt"};
+        System.out.println("Alien Dictionary Order: " + aliOrd(w1)); // Expected Output: "txyzkmnro"
+
+        // Test case 2: simple case with 2 letters
+        String[] w2 = {"x", "z"};
+        System.out.println("Alien Dictionary Order: " + aliOrd(w2)); // Expected Output: "xz"
+
+        // Test case 3: invalid order because of cycle the order was different
+        String[] w3 = {"x", "z", "x"};
+        System.out.println("Alien Dictionary Order: " + aliOrd(w3)); // Expected Output: ""
+    }
+}
